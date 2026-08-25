@@ -48,3 +48,23 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true });
 }
+
+/** Cek diagnostik: daftar email admin yang tersimpan (tanpa password). Dijaga SETUP_SECRET. */
+export async function GET(req: NextRequest) {
+  const setupSecret = process.env.SETUP_SECRET;
+  if (!setupSecret) {
+    return NextResponse.json({ error: "Setup tidak diaktifkan" }, { status: 404 });
+  }
+
+  const secret = req.nextUrl.searchParams.get("secret");
+  if (secret !== setupSecret) {
+    return NextResponse.json({ error: "Setup secret salah" }, { status: 403 });
+  }
+
+  const admins = await prisma.admin.findMany({
+    select: { email: true, createdAt: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return NextResponse.json({ admins });
+}
