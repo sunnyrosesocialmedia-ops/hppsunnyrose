@@ -52,10 +52,11 @@ export default function AdminSetupPage() {
         className="w-full max-w-sm bg-white rounded-xl shadow p-6 space-y-4 border"
       >
         <div>
-          <h1 className="text-xl font-semibold">Setup Akun Admin Pertama</h1>
+          <h1 className="text-xl font-semibold">Buat / Reset Akun Admin</h1>
           <p className="text-sm text-neutral-500">
-            Halaman ini hanya bisa dipakai sekali (terkunci otomatis setelah akun pertama
-            dibuat).
+            Kalau email di bawah belum terdaftar, akun baru dibuat. Kalau sudah ada, password-nya
+            akan diganti dengan yang baru. Perlu Setup Secret yang sama dengan environment
+            variable <code>SETUP_SECRET</code>.
           </p>
         </div>
 

@@ -103,8 +103,10 @@ Next.js (App Router) + TypeScript + Prisma (PostgreSQL) + Cloudinary + Nodemaile
      ```
 
    - **Lewat browser saja** (tanpa terminal): isi env var `SETUP_SECRET` di Vercel (string acak
-     bebas), redeploy, lalu buka `https://nama-project.vercel.app/admin/setup` dan isi form-nya.
-     Halaman ini otomatis terkunci permanen setelah dipakai sekali — aman ditinggal setelahnya.
+     rahasia), redeploy, lalu buka `https://nama-project.vercel.app/admin/setup` dan isi form-nya.
+     Endpoint ini tetap aktif selama `SETUP_SECRET` terisi — bisa dipakai lagi kapan saja untuk
+     reset password kalau lupa (isi email yang sama, password baru). Jaga `SETUP_SECRET` serahasia
+     password admin; hapus env var-nya kalau sudah tidak perlu opsi reset lagi.
 
    Setelah itu langsung bisa login di `https://nama-project.vercel.app/admin/login`.
 

@@ -11,10 +11,11 @@ const schema = z.object({
 });
 
 /**
- * Endpoint sekali pakai untuk membuat akun admin pertama tanpa akses terminal/DB
- * langsung (dipakai saat deploy ke platform serverless seperti Vercel). Terkunci
- * permanen begitu sudah ada satu Admin di database, dan hanya aktif kalau
- * SETUP_SECRET diisi di environment variable.
+ * Endpoint untuk membuat atau mereset akun admin tanpa akses terminal/DB langsung
+ * (dipakai saat deploy ke platform serverless seperti Vercel, atau kalau lupa
+ * kombinasi email/password yang tersimpan). Selalu dijaga oleh SETUP_SECRET —
+ * siapa pun yang tahu secret ini bisa membuat/reset akun admin, jadi perlakukan
+ * SETUP_SECRET sama rahasianya dengan password admin itu sendiri.
  */
 export async function POST(req: NextRequest) {
   const setupSecret = process.env.SETUP_SECRET;
@@ -32,17 +33,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Setup secret salah" }, { status: 403 });
   }
 
-  const existingCount = await prisma.admin.count();
-  if (existingCount > 0) {
-    return NextResponse.json(
-      { error: "Sudah ada akun admin. Endpoint ini terkunci permanen." },
-      { status: 403 }
-    );
-  }
-
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
-  await prisma.admin.create({
-    data: {
+  await prisma.admin.upsert({
+    where: { email: parsed.data.email },
+    update: { passwordHash, name: parsed.data.name || undefined },
+    create: {
       email: parsed.data.email,
       passwordHash,
       name: parsed.data.name || "Fotografer",
