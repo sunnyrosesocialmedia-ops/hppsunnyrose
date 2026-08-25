@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import fs from "fs/promises";
 import { prisma } from "@/lib/prisma";
-import { getSignedOriginalDownloadUrl } from "@/lib/cloudinary";
+import { mimeFromExt, originalFilePath } from "@/lib/storage";
 
 function errorPage(message: string, status: number) {
   return new NextResponse(
@@ -28,11 +29,26 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
     );
   }
 
+  const { photo } = item;
+  let buffer: Buffer;
+  try {
+    buffer = await fs.readFile(originalFilePath(photo.id, photo.originalExt));
+  } catch {
+    return errorPage("File foto tidak ditemukan di server. Hubungi fotografer.", 500);
+  }
+
   await prisma.orderItem.update({
     where: { id: item.id },
     data: { downloadCount: { increment: 1 } },
   });
 
-  const url = getSignedOriginalDownloadUrl(item.photo.originalPublicId, 300);
-  return NextResponse.redirect(url);
+  const filename = `${photo.title.replace(/[^a-z0-9]+/gi, "-").replace(/(^-|-$)/g, "")}.${photo.originalExt}`;
+
+  return new NextResponse(new Uint8Array(buffer), {
+    headers: {
+      "Content-Type": mimeFromExt(photo.originalExt),
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Length": String(buffer.length),
+    },
+  });
 }
