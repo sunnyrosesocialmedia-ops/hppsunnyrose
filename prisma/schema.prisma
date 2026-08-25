@@ -1,0 +1,67 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+}
+
+model Photo {
+  id                 String      @id @default(cuid())
+  title              String
+  description        String?
+  price              Int // harga dalam Rupiah (bilangan bulat)
+  category           String?
+  originalPublicId   String // Cloudinary public_id, delivery type "authenticated" (privat)
+  previewPublicId    String // Cloudinary public_id, delivery type "upload" (publik, berwatermark)
+  previewUrl         String // URL publik gambar preview berwatermark
+  width              Int?
+  height             Int?
+  published          Boolean     @default(true)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  orderItems         OrderItem[]
+}
+
+// SQLite tidak mendukung enum native, jadi status disimpan sebagai String.
+// Nilai yang valid: PENDING | PAID | FAILED | EXPIRED | CANCELLED (lihat src/lib/types.ts)
+model Order {
+  id              String      @id @default(cuid())
+  buyerName       String
+  buyerEmail      String
+  status          String      @default("PENDING")
+  totalAmount     Int
+  snapToken       String?
+  snapRedirectUrl String?
+  paidAt          DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  items           OrderItem[]
+
+  @@index([buyerEmail])
+}
+
+model OrderItem {
+  id            String    @id @default(cuid())
+  orderId       String
+  order         Order     @relation(fields: [orderId], references: [id])
+  photoId       String
+  photo         Photo     @relation(fields: [photoId], references: [id])
+  price         Int
+  downloadToken String    @unique
+  downloadCount Int       @default(0)
+  maxDownloads  Int       @default(5)
+  expiresAt     DateTime?
+
+  @@index([orderId])
+  @@index([downloadToken])
+}
