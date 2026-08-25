@@ -93,13 +93,18 @@ Next.js (App Router) + TypeScript + Prisma (PostgreSQL) + Cloudinary + Nodemaile
    otomatis membuat semua tabel di database Postgres yang baru setiap kali deploy — tidak perlu
    langkah manual tambahan.
 
-6. **Buat akun login fotografer pertama.** Karena Vercel tidak bisa menjalankan perintah interaktif
-   di server, jalankan `create-admin` dari komputer lokal Anda dengan `DATABASE_URL` diarahkan ke
-   database production yang sama:
+6. **Buat akun login fotografer pertama.** Ada dua cara:
 
-   ```bash
-   DATABASE_URL="connection-string-dari-vercel" npm run create-admin
-   ```
+   - **Dari komputer lokal** (kalau punya Node.js & repo ini di-clone): jalankan `create-admin`
+     dengan `DATABASE_URL` diarahkan ke database production yang sama:
+
+     ```bash
+     DATABASE_URL="connection-string-dari-vercel" npm run create-admin
+     ```
+
+   - **Lewat browser saja** (tanpa terminal): isi env var `SETUP_SECRET` di Vercel (string acak
+     bebas), redeploy, lalu buka `https://nama-project.vercel.app/admin/setup` dan isi form-nya.
+     Halaman ini otomatis terkunci permanen setelah dipakai sekali — aman ditinggal setelahnya.
 
    Setelah itu langsung bisa login di `https://nama-project.vercel.app/admin/login`.
 

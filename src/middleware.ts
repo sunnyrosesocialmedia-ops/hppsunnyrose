@@ -4,8 +4,11 @@ import { SESSION_COOKIE_NAME, verifyAdminToken } from "@/lib/jwt";
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  const isAdminApi = pathname.startsWith("/api/admin") && pathname !== "/api/admin/login";
-  const isAdminPage = pathname.startsWith("/admin") && pathname !== "/admin/login";
+  const publicAdminApiPaths = ["/api/admin/login", "/api/admin/setup"];
+  const publicAdminPagePaths = ["/admin/login", "/admin/setup"];
+
+  const isAdminApi = pathname.startsWith("/api/admin") && !publicAdminApiPaths.includes(pathname);
+  const isAdminPage = pathname.startsWith("/admin") && !publicAdminPagePaths.includes(pathname);
 
   if (!isAdminApi && !isAdminPage) return NextResponse.next();
 
