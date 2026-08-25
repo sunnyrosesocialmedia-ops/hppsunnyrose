@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../src/lib/prisma";
+import { normalizeEmail } from "../src/lib/email";
 import readline from "readline";
 
 function ask(question: string, hide = false): Promise<string> {
@@ -18,14 +19,16 @@ function ask(question: string, hide = false): Promise<string> {
 }
 
 async function main() {
-  const email = process.env.ADMIN_EMAIL || (await ask("Email admin: "));
+  const rawEmail = process.env.ADMIN_EMAIL || (await ask("Email admin: "));
   const password = process.env.ADMIN_PASSWORD || (await ask("Password admin: ", true));
   const name = process.env.ADMIN_NAME || "Fotografer";
 
-  if (!email || !password) {
+  if (!rawEmail || !password) {
     console.error("Email dan password wajib diisi.");
     process.exit(1);
   }
+
+  const email = normalizeEmail(rawEmail);
 
   const passwordHash = await bcrypt.hash(password, 10);
 

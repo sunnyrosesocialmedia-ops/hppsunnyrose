@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { normalizeEmail } from "@/lib/email";
 
 const schema = z.object({
   secret: z.string().min(1),
@@ -33,12 +34,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Setup secret salah" }, { status: 403 });
   }
 
+  const email = normalizeEmail(parsed.data.email);
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
   await prisma.admin.upsert({
-    where: { email: parsed.data.email },
+    where: { email },
     update: { passwordHash, name: parsed.data.name || undefined },
     create: {
-      email: parsed.data.email,
+      email,
       passwordHash,
       name: parsed.data.name || "Fotografer",
     },

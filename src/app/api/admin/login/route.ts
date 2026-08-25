@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { createAdminSession } from "@/lib/auth";
+import { normalizeEmail } from "@/lib/email";
 
 const schema = z.object({
   email: z.string().email(),
@@ -16,7 +17,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Email/password tidak valid" }, { status: 400 });
   }
 
-  const admin = await prisma.admin.findUnique({ where: { email: parsed.data.email } });
+  const admin = await prisma.admin.findUnique({
+    where: { email: normalizeEmail(parsed.data.email) },
+  });
   if (!admin) {
     return NextResponse.json({ error: "Email atau password salah" }, { status: 401 });
   }
