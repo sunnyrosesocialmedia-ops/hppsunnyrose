@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -32,15 +32,19 @@ model Photo {
   orderItems         OrderItem[]
 }
 
-// SQLite tidak mendukung enum native, jadi status disimpan sebagai String.
-// Nilai yang valid: PENDING | PAID | CANCELLED (lihat src/lib/types.ts)
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
 // Pembayaran dikonfirmasi manual oleh fotografer lewat WhatsApp, bukan payment gateway.
 model Order {
   id          String      @id @default(cuid())
   buyerName   String
   buyerEmail  String
   buyerPhone  String // nomor WhatsApp pembeli, dipakai fotografer untuk konfirmasi
-  status      String      @default("PENDING")
+  status      OrderStatus @default(PENDING)
   totalAmount Int
   paidAt      DateTime?
   createdAt   DateTime    @default(now())

@@ -16,7 +16,7 @@ pembeli hanya bisa download resolusi penuh tanpa watermark setelah bayar.
 
 ## Tumpukan Teknologi
 
-Next.js (App Router) + TypeScript + Prisma (SQLite) + Cloudinary + Nodemailer.
+Next.js (App Router) + TypeScript + Prisma (PostgreSQL) + Cloudinary + Nodemailer.
 
 ## Menjalankan di Lokal
 
@@ -33,6 +33,9 @@ Next.js (App Router) + TypeScript + Prisma (SQLite) + Cloudinary + Nodemailer.
    ```
 
    Isi minimal:
+   - `DATABASE_URL` — connection string PostgreSQL. Untuk lokal, gampangnya pakai database gratis
+     dari [neon.tech](https://neon.tech) atau [supabase.com](https://supabase.com) (tinggal daftar,
+     copy connection string-nya), atau Postgres yang jalan di komputer sendiri.
    - `SESSION_SECRET` — string acak panjang (bebas, mis. hasil `openssl rand -hex 32`).
    - `CLOUDINARY_*` — daftar gratis di [cloudinary.com](https://cloudinary.com), ambil dari Dashboard.
    - `WHATSAPP_NUMBER` — nomor WhatsApp fotografer (format `08xx` atau `62xx`) untuk tombol chat
@@ -64,12 +67,43 @@ Next.js (App Router) + TypeScript + Prisma (SQLite) + Cloudinary + Nodemailer.
    - Situs publik: `http://localhost:3000`
    - Login fotografer: `http://localhost:3000/admin/login`
 
-## Deploy ke Produksi
+## Deploy ke Vercel
 
-- Set semua environment variable di platform hosting (Vercel/VPS/dll).
-- Untuk database produksi, disarankan pindah ke PostgreSQL: ubah `provider` di
-  `prisma/schema.prisma` menjadi `postgresql` dan `DATABASE_URL` ke koneksi Postgres Anda, lalu
-  jalankan `npx prisma migrate deploy`.
+1. **Push kode ke GitHub** (kalau belum) — repo ini sudah siap.
+
+2. **Import project di Vercel**
+   - Buka [vercel.com](https://vercel.com) → **Add New → Project** → pilih repo GitHub ini.
+   - Vercel otomatis mendeteksi ini project Next.js, tidak perlu ubah setting build.
+
+3. **Tambahkan database PostgreSQL**
+   - Di halaman project Vercel → tab **Storage** → **Create Database** → pilih **Postgres**
+     (biasanya via integrasi Neon). Ini gratis untuk pemakaian kecil.
+   - Setelah dibuat, Vercel otomatis menambahkan env var koneksinya ke project — cek namanya
+     (mis. `DATABASE_URL` atau `POSTGRES_URL`). Kalau namanya bukan `DATABASE_URL`, tambahkan satu
+     env var baru bernama **`DATABASE_URL`** dengan nilai yang sama (Prisma di kode ini membaca
+     nama `DATABASE_URL` secara spesifik).
+
+4. **Isi environment variable lain** di project Settings → Environment Variables:
+   - `SESSION_SECRET`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`,
+     `WHATSAPP_NUMBER`, `WATERMARK_TEXT`, `SMTP_*` (kalau pakai email), `MAIL_FROM`.
+   - `APP_URL` — isi dengan domain Vercel Anda (mis. `https://nama-project.vercel.app`), dipakai
+     untuk link download di email.
+
+5. **Deploy.** Build command bawaan project ini (`prisma generate && prisma migrate deploy && next build`)
+   otomatis membuat semua tabel di database Postgres yang baru setiap kali deploy — tidak perlu
+   langkah manual tambahan.
+
+6. **Buat akun login fotografer pertama.** Karena Vercel tidak bisa menjalankan perintah interaktif
+   di server, jalankan `create-admin` dari komputer lokal Anda dengan `DATABASE_URL` diarahkan ke
+   database production yang sama:
+
+   ```bash
+   DATABASE_URL="connection-string-dari-vercel" npm run create-admin
+   ```
+
+   Setelah itu langsung bisa login di `https://nama-project.vercel.app/admin/login`.
+
+7. **Deploy berikutnya** otomatis jalan tiap kali Anda push ke branch yang tersambung ke Vercel.
 
 ## Struktur Alur Pembayaran
 
