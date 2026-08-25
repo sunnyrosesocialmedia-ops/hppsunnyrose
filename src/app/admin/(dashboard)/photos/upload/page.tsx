@@ -10,7 +10,7 @@ export default function UploadPhotoPage() {
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -20,28 +20,57 @@ export default function UploadPhotoPage() {
       return;
     }
     setError(null);
-    setLoading(true);
 
     try {
+      setProgress("Menyiapkan upload...");
+      const sigRes = await fetch("/api/admin/upload-signature", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      if (!sigRes.ok) throw new Error("Gagal menyiapkan upload");
+      const sig = await sigRes.json();
+
+      setProgress("Mengunggah foto ke Cloudinary...");
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("title", title);
-      if (description) formData.append("description", description);
-      formData.append("price", price);
-      if (category) formData.append("category", category);
+      formData.append("api_key", sig.apiKey);
+      formData.append("timestamp", String(sig.timestamp));
+      formData.append("signature", sig.signature);
+      formData.append("public_id", sig.publicId);
+      formData.append("folder", sig.folder);
+      formData.append("type", "authenticated");
 
-      const res = await fetch("/api/admin/photos", { method: "POST", body: formData });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(typeof data.error === "string" ? data.error : "Gagal menyimpan foto");
+      const uploadRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`,
+        { method: "POST", body: formData }
+      );
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error(uploadData?.error?.message || "Upload gagal");
+
+      setProgress("Membuat preview berwatermark...");
+      const createRes = await fetch("/api/admin/photos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          description: description || undefined,
+          price: Number(price),
+          category: category || undefined,
+          originalPublicId: uploadData.public_id,
+        }),
+      });
+      if (!createRes.ok) {
+        const data = await createRes.json().catch(() => ({}));
+        throw new Error(data.error ? JSON.stringify(data.error) : "Gagal menyimpan foto");
       }
 
+      setProgress(null);
       router.push("/admin/photos");
       router.refresh();
     } catch (err) {
+      setProgress(null);
       setError(err instanceof Error ? err.message : "Terjadi kesalahan");
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -111,10 +140,10 @@ export default function UploadPhotoPage() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={!!progress}
           className="w-full bg-brand-600 hover:bg-brand-700 text-white rounded-md py-2 text-sm font-medium disabled:opacity-50"
         >
-          {loading ? "Mengunggah..." : "Upload"}
+          {progress || "Upload"}
         </button>
       </form>
     </div>

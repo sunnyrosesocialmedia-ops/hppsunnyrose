@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { extFromFilename, saveOriginalAndPreview } from "@/lib/storage";
+import { generateWatermarkedPreview } from "@/lib/cloudinary";
+
+const schema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  price: z.number().int().positive(),
+  category: z.string().optional(),
+  originalPublicId: z.string().min(1),
+});
 
 export async function GET() {
   const photos = await prisma.photo.findMany({
@@ -10,54 +19,35 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const form = await req.formData().catch(() => null);
-  if (!form) {
-    return NextResponse.json({ error: "Form data tidak valid" }, { status: 400 });
+  const body = await req.json().catch(() => null);
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const file = form.get("file");
-  const title = form.get("title");
-  const description = form.get("description");
-  const priceRaw = form.get("price");
-  const category = form.get("category");
-
-  if (!(file instanceof File) || typeof title !== "string" || !title.trim()) {
-    return NextResponse.json({ error: "File dan judul wajib diisi" }, { status: 400 });
-  }
-
-  const price = Number(priceRaw);
-  if (!Number.isInteger(price) || price <= 0) {
-    return NextResponse.json({ error: "Harga tidak valid" }, { status: 400 });
-  }
-
-  if (!file.type.startsWith("image/")) {
-    return NextResponse.json({ error: "File harus berupa gambar" }, { status: 400 });
-  }
-
-  const id = crypto.randomUUID();
-  const ext = extFromFilename(file.name);
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const { title, description, price, category, originalPublicId } = parsed.data;
+  const previewPublicId = originalPublicId.replace(/^originals\//, "previews/");
 
   try {
-    const { width, height } = await saveOriginalAndPreview(id, ext, buffer);
+    const preview = await generateWatermarkedPreview(originalPublicId, previewPublicId);
 
     const photo = await prisma.photo.create({
       data: {
-        id,
-        title: title.trim(),
-        description: typeof description === "string" && description ? description : undefined,
+        title,
+        description,
         price,
-        category: typeof category === "string" && category ? category : undefined,
-        originalExt: ext,
-        previewUrl: `/api/preview/${id}`,
-        width,
-        height,
+        category,
+        originalPublicId,
+        previewPublicId,
+        previewUrl: preview.previewUrl,
+        width: preview.width,
+        height: preview.height,
       },
     });
 
     return NextResponse.json({ photo });
   } catch (err) {
-    console.error("Gagal memproses foto:", err);
-    return NextResponse.json({ error: "Gagal memproses foto" }, { status: 500 });
+    console.error("Gagal membuat preview foto:", err);
+    return NextResponse.json({ error: "Gagal memproses foto di Cloudinary" }, { status: 500 });
   }
 }

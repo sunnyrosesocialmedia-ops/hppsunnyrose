@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { deletePhotoFiles } from "@/lib/storage";
+import { deleteOriginalAndPreview } from "@/lib/cloudinary";
 
 const schema = z.object({
   title: z.string().min(1).optional(),
@@ -40,7 +40,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     });
   }
 
-  await deletePhotoFiles(photo.id, photo.originalExt);
+  await deleteOriginalAndPreview(photo.originalPublicId, photo.previewPublicId);
   await prisma.photo.delete({ where: { id: photo.id } });
 
   return NextResponse.json({ ok: true });

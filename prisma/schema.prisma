@@ -15,23 +15,21 @@ model Admin {
   createdAt    DateTime @default(now())
 }
 
-// File asli disimpan privat di STORAGE_DIR/originals/{id}.{originalExt}, hanya bisa
-// diakses lewat /api/download/[token] setelah pembayaran lunas. Preview berwatermark
-// disimpan di STORAGE_DIR/previews/{id}.jpg dan dilayani publik lewat /api/preview/[id].
 model Photo {
-  id           String      @id @default(cuid())
-  title        String
-  description  String?
-  price        Int // harga dalam Rupiah (bilangan bulat)
-  category     String?
-  originalExt  String // ekstensi file asli, mis. "jpg", "png"
-  previewUrl   String // = /api/preview/{id}
-  width        Int?
-  height       Int?
-  published    Boolean     @default(true)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  orderItems   OrderItem[]
+  id                 String      @id @default(cuid())
+  title              String
+  description        String?
+  price              Int // harga dalam Rupiah (bilangan bulat)
+  category           String?
+  originalPublicId   String // Cloudinary public_id, delivery type "authenticated" (privat)
+  previewPublicId    String // Cloudinary public_id, delivery type "upload" (publik, berwatermark)
+  previewUrl         String // URL publik gambar preview berwatermark
+  width              Int?
+  height             Int?
+  published          Boolean     @default(true)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  orderItems         OrderItem[]
 }
 
 // SQLite tidak mendukung enum native, jadi status disimpan sebagai String.
