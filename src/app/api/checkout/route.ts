@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { createSnapTransaction } from "@/lib/midtrans";
 import { generateDownloadToken } from "@/lib/tokens";
+import { buildOrderWhatsAppLink } from "@/lib/whatsapp";
 
 const schema = z.object({
   buyerName: z.string().min(1),
   buyerEmail: z.string().email(),
+  buyerPhone: z.string().min(6),
   photoIds: z.array(z.string().min(1)).min(1),
 });
 
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Data tidak valid" }, { status: 400 });
   }
 
-  const { buyerName, buyerEmail, photoIds } = parsed.data;
+  const { buyerName, buyerEmail, buyerPhone, photoIds } = parsed.data;
 
   const photos = await prisma.photo.findMany({
     where: { id: { in: photoIds }, published: true },
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
     data: {
       buyerName,
       buyerEmail,
+      buyerPhone,
       totalAmount,
       status: "PENDING",
       items: {
@@ -45,27 +47,12 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  try {
-    const transaction = await createSnapTransaction({
-      orderId: order.id,
-      grossAmount: totalAmount,
-      buyerName,
-      buyerEmail,
-      items: photos.map((p) => ({ id: p.id, name: p.title, price: p.price, quantity: 1 })),
-    });
+  const whatsappUrl = buildOrderWhatsAppLink({
+    id: order.id,
+    buyerName,
+    totalAmount,
+    items: photos.map((p) => ({ title: p.title })),
+  });
 
-    await prisma.order.update({
-      where: { id: order.id },
-      data: { snapToken: transaction.token, snapRedirectUrl: transaction.redirect_url },
-    });
-
-    return NextResponse.json({
-      orderId: order.id,
-      redirectUrl: transaction.redirect_url,
-    });
-  } catch (err) {
-    console.error("Gagal membuat transaksi Midtrans:", err);
-    await prisma.order.update({ where: { id: order.id }, data: { status: "FAILED" } });
-    return NextResponse.json({ error: "Gagal membuat transaksi pembayaran" }, { status: 500 });
-  }
+  return NextResponse.json({ orderId: order.id, whatsappUrl });
 }

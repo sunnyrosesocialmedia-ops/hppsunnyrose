@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { formatRupiah } from "@/lib/format";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminDashboardPage() {
   const [photoCount, paidOrders, pendingOrders] = await Promise.all([
     prisma.photo.count(),

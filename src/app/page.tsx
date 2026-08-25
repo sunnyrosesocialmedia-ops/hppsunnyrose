@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import Navbar from "@/components/navbar";
 import PhotoCard from "@/components/photo-card";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const photos = await prisma.photo.findMany({
     where: { published: true },

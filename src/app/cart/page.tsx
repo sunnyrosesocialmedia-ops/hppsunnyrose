@@ -3,14 +3,17 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/navbar";
 import { useCart } from "@/lib/cart-context";
 import { formatRupiah } from "@/lib/format";
 
 export default function CartPage() {
+  const router = useRouter();
   const { items, removeItem, total, clear } = useCart();
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
+  const [buyerPhone, setBuyerPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,6 +29,7 @@ export default function CartPage() {
         body: JSON.stringify({
           buyerName,
           buyerEmail,
+          buyerPhone,
           photoIds: items.map((i) => i.photoId),
         }),
       });
@@ -33,7 +37,7 @@ export default function CartPage() {
       if (!res.ok) throw new Error(data.error || "Gagal checkout");
 
       clear();
-      window.location.href = data.redirectUrl;
+      router.push(`/order/${data.orderId}`);
     } catch (err) {
       setLoading(false);
       setError(err instanceof Error ? err.message : "Terjadi kesalahan");
@@ -106,15 +110,26 @@ export default function CartPage() {
                   className="w-full border rounded-md px-3 py-2 text-sm"
                 />
                 <p className="text-xs text-neutral-400">
-                  Link download foto akan dikirim ke email ini setelah pembayaran berhasil.
+                  Link download foto akan dikirim ke email ini setelah pembayaran dikonfirmasi.
                 </p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">No. WhatsApp</label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="08xxxxxxxxxx"
+                  value={buyerPhone}
+                  onChange={(e) => setBuyerPhone(e.target.value)}
+                  className="w-full border rounded-md px-3 py-2 text-sm"
+                />
               </div>
               <button
                 type="submit"
                 disabled={loading}
                 className="w-full bg-brand-600 hover:bg-brand-700 text-white rounded-md py-2 text-sm font-medium disabled:opacity-50"
               >
-                {loading ? "Memproses..." : `Bayar ${formatRupiah(total)}`}
+                {loading ? "Memproses..." : `Lanjut ke WhatsApp — ${formatRupiah(total)}`}
               </button>
             </form>
           </>

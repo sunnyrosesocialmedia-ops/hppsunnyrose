@@ -33,19 +33,19 @@ model Photo {
 }
 
 // SQLite tidak mendukung enum native, jadi status disimpan sebagai String.
-// Nilai yang valid: PENDING | PAID | FAILED | EXPIRED | CANCELLED (lihat src/lib/types.ts)
+// Nilai yang valid: PENDING | PAID | CANCELLED (lihat src/lib/types.ts)
+// Pembayaran dikonfirmasi manual oleh fotografer lewat WhatsApp, bukan payment gateway.
 model Order {
-  id              String      @id @default(cuid())
-  buyerName       String
-  buyerEmail      String
-  status          String      @default("PENDING")
-  totalAmount     Int
-  snapToken       String?
-  snapRedirectUrl String?
-  paidAt          DateTime?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  items           OrderItem[]
+  id          String      @id @default(cuid())
+  buyerName   String
+  buyerEmail  String
+  buyerPhone  String // nomor WhatsApp pembeli, dipakai fotografer untuk konfirmasi
+  status      String      @default("PENDING")
+  totalAmount Int
+  paidAt      DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  items       OrderItem[]
 
   @@index([buyerEmail])
 }

@@ -29,10 +29,9 @@ CREATE TABLE "Order" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "buyerName" TEXT NOT NULL,
     "buyerEmail" TEXT NOT NULL,
+    "buyerPhone" TEXT NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'PENDING',
     "totalAmount" INTEGER NOT NULL,
-    "snapToken" TEXT,
-    "snapRedirectUrl" TEXT,
     "paidAt" DATETIME,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL

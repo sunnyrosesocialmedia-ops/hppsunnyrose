@@ -9,14 +9,13 @@ type OrderData = {
   status: string;
   totalAmount: number;
   buyerName: string;
+  whatsappUrl: string | null;
   items: { title: string; previewUrl: string; downloadUrl: string | null }[];
 };
 
 const statusText: Record<string, string> = {
-  PENDING: "Menunggu pembayaran. Halaman ini akan otomatis diperbarui.",
-  PAID: "Pembayaran berhasil! Silakan download foto Anda di bawah.",
-  FAILED: "Pembayaran gagal.",
-  EXPIRED: "Waktu pembayaran sudah habis.",
+  PENDING: "Menunggu konfirmasi pembayaran dari fotografer.",
+  PAID: "Pembayaran dikonfirmasi! Silakan download foto Anda di bawah.",
   CANCELLED: "Pesanan dibatalkan.",
 };
 
@@ -36,7 +35,7 @@ export default function OrderStatus({ orderId }: { orderId: string }) {
     }
 
     fetchOrder();
-    interval = setInterval(fetchOrder, 4000);
+    interval = setInterval(fetchOrder, 15000);
     return () => {
       active = false;
       clearInterval(interval);
@@ -49,10 +48,26 @@ export default function OrderStatus({ orderId }: { orderId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white border rounded-xl p-6 space-y-2">
+      <div className="bg-white border rounded-xl p-6 space-y-3">
         <div className="text-sm text-neutral-500">Pesanan #{order.id}</div>
         <div className="text-lg font-semibold">{formatRupiah(order.totalAmount)}</div>
         <div className="text-sm">{statusText[order.status] || order.status}</div>
+
+        {order.status === "PENDING" && order.whatsappUrl && (
+          <a
+            href={order.whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white rounded-md px-4 py-2 text-sm font-medium"
+          >
+            Chat WhatsApp untuk Konfirmasi Pembayaran
+          </a>
+        )}
+        {order.status === "PENDING" && !order.whatsappUrl && (
+          <p className="text-xs text-amber-600">
+            Nomor WhatsApp fotografer belum diatur. Hubungi fotografer secara langsung.
+          </p>
+        )}
       </div>
 
       {order.status === "PAID" && (
