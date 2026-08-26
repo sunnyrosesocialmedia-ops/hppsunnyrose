@@ -59,7 +59,7 @@ export async function generateWatermarkedPreview(
     type: "upload",
     overwrite: true,
     transformation: [
-      { width: 1600, crop: "limit", quality: "auto:good" },
+      { width: 1000, crop: "limit", quality: "auto:eco" },
       {
         overlay: {
           font_family: "Arial",
